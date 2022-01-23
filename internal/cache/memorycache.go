@@ -97,7 +97,7 @@ func (c *Cache) Delete(key string) error {
 	defer c.Unlock()
 
 	if _, found := c.items[key]; !found {
-		return errors.New("Key not found")
+		return errors.New("key not found")
 	}
 
 	delete(c.items, key)

@@ -4,7 +4,7 @@ import (
 	"github.com/BurntSushi/toml"
 	"l0project/internal/apiserver"
 	"l0project/internal/cache"
-	nats_streaming "l0project/internal/nats-streaming"
+	natsstreaming "l0project/internal/nats-streaming"
 	"log"
 	"time"
 )
@@ -20,12 +20,12 @@ func main() {
 	}
 	s := apiserver.New(c, cch)
 	// Initialize Nats subscriber
-	nsc := nats_streaming.NewConfig()
+	nsc := natsstreaming.NewConfig()
 	_, err = toml.DecodeFile("configs/apiserver.toml", nsc)
 	if err != nil {
 		log.Fatal(err)
 	}
-	ns := nats_streaming.New(nsc, cch)
+	ns := natsstreaming.New(nsc, cch)
 	log.Println("Starting nats")
 	go func() {
 		if err := ns.Start(); err != nil {
