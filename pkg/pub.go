@@ -112,7 +112,7 @@ func main() {
 	}
 
 	o := &Order{
-		OrderUID:          "b563feb7b2b84b6test1",
+		OrderUID:          "b563feb7b2b84b6test2",
 		Entry:             "WBIL",
 		Locale:            "en",
 		InternalSignature: "",

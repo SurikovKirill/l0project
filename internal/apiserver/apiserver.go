@@ -77,10 +77,37 @@ func (s *APIServer) configureStore() error {
 
 func (s *APIServer) getOrder() http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
+		//type View struct {
+		//	Order    string
+		//	Delivery string
+		//	Payment  string
+		//}
 		vars := mux.Vars(r)
 		key := vars["id"]
 		tmp, _ := s.cache.Get(key)
+		//o := model.Order{}
+		//or, err := json.Marshal(tmp)
+		//if err != nil {
+		//	log.Println(err)
+		//}
+		//err = json.Unmarshal(or, &o)
+		//if err != nil {
+		//	log.Println(err)
+		//}
+		//data := View{
+		//	Order:    o.OrderUID,
+		//	Delivery: o.Delivery.Name,
+		//	Payment:  o.Payment.Bank,
+		//}
+
 		w.Header().Set("Content-Type", "application/json")
+		w.Header().Set("Access-Control-Allow-Origin", "*")
+		//tmpl := template.Must(template.New("data").Parse(`<div>
+		//    <h1>{{ .Order}}</h1>
+		//    <p>{{ .Delivery}}</p>
+		//	<p>{{ .Payment}}</p>
+		//</div>`))
+		//tmpl.Execute(w, data)
 		json.NewEncoder(w).Encode(tmp)
 	}
 }
