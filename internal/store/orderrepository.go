@@ -26,25 +26,29 @@ func (r *OrderRepository) Create(o *model.Order) (*model.Order, error) {
 }
 
 func (r *OrderRepository) AllOrders() ([]model.Order, error) {
-	o := model.Order{}
+	log.Println("Select all orders from db for cache")
 	tmp, err := r.store.db.Query("SELECT * from orders")
 	if err != nil {
-		log.Println(err)
+		return nil, err
 	}
+	o := model.Order{}
 	var result []model.Order
 	var info []byte
 	var p string
+	log.Println("Prepare data from db for cache")
 	for tmp.Next() {
 		if err := tmp.Scan(&p, &info); err != nil {
 			log.Println(err)
 		}
-		log.Println(info)
 		err := json.Unmarshal(info, &o)
 		if err != nil {
 			log.Fatal(err)
 		}
+		log.Println("Row from db")
 		log.Println(o)
 		result = append(result, o)
 	}
+	log.Println("Result for cache")
+	log.Println(result)
 	return result, nil
 }

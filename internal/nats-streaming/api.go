@@ -40,18 +40,16 @@ func (st *Stan) configureStore() error {
 func (st *Stan) Start() error {
 	// Инициализируем базу данных
 	if err := st.configureStore(); err != nil {
-		log.Println(err)
 		return err
 	}
 
 	// Подключение к nats-streaming
-	log.Println("Connecting to server")
+	log.Println("Connecting to nats-streaming-server")
 	sc, err := stan.Connect(st.config.ClusterId, st.config.ClientId, stan.NatsURL(st.config.Host),
 		stan.SetConnectionLostHandler(func(_ stan.Conn, reason error) {
 			log.Fatalf("Connection lost, reason: %v", reason)
 		}))
 	if err != nil {
-		log.Println(err)
 		return err
 	}
 	defer sc.Close()
@@ -60,7 +58,9 @@ func (st *Stan) Start() error {
 	log.Println("Subscribing")
 	sc.Subscribe(st.config.Subject, func(msg *stan.Msg) {
 		// Сохранение сообщения
-		save(st.cache, st.store, msg.Data)
+		if err := save(st.cache, st.store, msg.Data); err != nil {
+			log.Println(err)
+		}
 	})
 	Block()
 
@@ -74,21 +74,23 @@ func Block() {
 }
 
 // Сохранение полученного сообщения в базу данных и в кэш
-func save(cache *cache.Cache, store *store.Store, m []byte) {
-	log.Println("Unmarshalling")
+func save(cache *cache.Cache, store *store.Store, m []byte) error {
+	log.Println("Saving nats message")
 	target := model.Order{}
 	err := json.Unmarshal(m, &target)
 	if err != nil {
-		log.Fatal(err)
+		return err
 	}
-	log.Println("Saving db")
+	log.Println("Saving message in db")
 	p, err := store.Order().Create(&target)
 	if err != nil {
-		log.Println(err)
+		return err
 	}
-	log.Println("Print row")
+	log.Println("Print row in db")
 	log.Println(p)
-	log.Println("Saving cache")
+	log.Println("Saving data in cache")
 	cache.Set(target.OrderUID, target, 5*time.Minute)
+	log.Println("Print data in cache")
 	log.Println(cache)
+	return nil
 }

@@ -112,7 +112,7 @@ func main() {
 	}
 
 	o := &Order{
-		OrderUID:          "b563feb7b2b84b6test",
+		OrderUID:          "b563feb7b2b84b6test1",
 		Entry:             "WBIL",
 		Locale:            "en",
 		InternalSignature: "",
@@ -133,15 +133,15 @@ func main() {
 		os.Exit(1)
 	}
 
-	for {
-		err = sc.Publish("test", out)
-		if err != nil {
-			log.Println(err)
-			break
-		}
-		fmt.Println(string(out))
-		fmt.Println("has been send")
-		time.Sleep(20 * time.Second)
+	//for {
+	err = sc.Publish("test", out)
+	if err != nil {
+		log.Println(err)
+		//break
 	}
+	fmt.Println(string(out))
+	fmt.Println("has been send")
+	//time.Sleep(20 * time.Second)
+	//}
 
 }

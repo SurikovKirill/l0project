@@ -6,7 +6,6 @@ import (
 	"github.com/sirupsen/logrus"
 	"l0project/internal/cache"
 	"l0project/internal/store"
-	"log"
 	"net/http"
 	"time"
 )
@@ -36,15 +35,22 @@ func (s *APIServer) Start() error {
 	if err := s.configureStore(); err != nil {
 		return err
 	}
-	s.logger.Info("starting server")
+	if err := s.configureCache(); err != nil {
+		return err
+	}
+	s.logger.Info("Starting server")
+	return http.ListenAndServe(s.config.BindAddr, s.router)
+}
+
+func (s *APIServer) configureCache() error {
 	tmp, err := s.store.Order().AllOrders()
 	if err != nil {
-		log.Println(err)
+		return err
 	}
 	for i := 0; i < len(tmp); i++ {
 		s.cache.Set(tmp[i].OrderUID, tmp[i], 10*time.Minute)
 	}
-	return http.ListenAndServe(s.config.BindAddr, s.router)
+	return nil
 }
 
 func (s *APIServer) configureLogger() error {
