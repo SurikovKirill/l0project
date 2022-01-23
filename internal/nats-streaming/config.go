@@ -1,17 +1,21 @@
 package nats_streaming
 
+import "l0project/internal/store"
+
 type Config struct {
-	clusterId string
-	clientId  string
-	host      string
-	subject   string
+	ClusterId string
+	ClientId  string
+	Host      string
+	Subject   string
+	Store     *store.Config
 }
 
 func NewConfig() *Config {
 	return &Config{
-		host:      "nats://localhost:4223",
-		clusterId: "test-cluster",
-		subject:   "test",
-		clientId:  "test-pub",
+		Host:      "nats://localhost:4223",
+		ClusterId: "test-cluster",
+		Subject:   "test",
+		ClientId:  "test-sub",
+		Store:     store.NewConfig(),
 	}
 }

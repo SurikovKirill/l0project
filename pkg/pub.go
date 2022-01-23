@@ -71,6 +71,7 @@ func main() {
 	if err != nil {
 		log.Fatal(err)
 	}
+	defer sc.Close()
 	fmt.Println("Publishing")
 	// Simple Synchronous Publisher
 	d := &Delivery{
@@ -131,7 +132,16 @@ func main() {
 		log.Println(err)
 		os.Exit(1)
 	}
-	fmt.Println(string(out))
-	sc.Publish("test", out)
-	sc.Close()
+
+	for {
+		err = sc.Publish("test", out)
+		if err != nil {
+			log.Println(err)
+			break
+		}
+		fmt.Println(string(out))
+		fmt.Println("has been send")
+		time.Sleep(20 * time.Second)
+	}
+
 }

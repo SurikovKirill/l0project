@@ -1,48 +1,94 @@
 package nats_streaming
 
 import (
-	"fmt"
+	"encoding/json"
 	"github.com/nats-io/stan.go"
+	"l0project/internal/cache"
+	"l0project/internal/model"
+	"l0project/internal/store"
 	"log"
+	"sync"
+	"time"
 )
 
 type Stan struct {
-	client *stan.Conn
-	config *Config
+	config *Config      // Конфиг для подписчика
+	store  *store.Store // База данных
+	cache  *cache.Cache // Кэш
 }
 
-func New(config *Config) *Stan {
+// New ...
+func New(config *Config, memoryCache *cache.Cache) *Stan {
+	// Инициализируем в конструкторе конфиг и кэш
 	return &Stan{
 		config: config,
+		cache:  memoryCache,
 	}
 }
 
+// Конфигурирование базы данных
+func (st *Stan) configureStore() error {
+	s := store.New(st.config.Store)
+	if err := s.Open(); err != nil {
+		return err
+	}
+	st.store = s
+	return nil
+}
+
+// Start ...
 func (st *Stan) Start() error {
-	// Connect to nats-streaming
-	sc, err := stan.Connect(st.config.clusterId, st.config.clientId, stan.NatsURL(st.config.host),
+	// Инициализируем базу данных
+	if err := st.configureStore(); err != nil {
+		log.Println(err)
+		return err
+	}
+
+	// Подключение к nats-streaming
+	log.Println("Connecting to server")
+	sc, err := stan.Connect(st.config.ClusterId, st.config.ClientId, stan.NatsURL(st.config.Host),
 		stan.SetConnectionLostHandler(func(_ stan.Conn, reason error) {
 			log.Fatalf("Connection lost, reason: %v", reason)
 		}))
 	if err != nil {
+		log.Println(err)
 		return err
 	}
+	defer sc.Close()
 
-	// Subscribe
-	sub, err := sc.Subscribe(st.config.subject, func(msg *stan.Msg) {
-		fmt.Printf("Received a message: %s\n", string(msg.Data))
-	}, stan.DeliverAllAvailable())
-	if err != nil {
-		return err
-	}
+	// Оформление подписки
+	log.Println("Subscribing")
+	sc.Subscribe(st.config.Subject, func(msg *stan.Msg) {
+		// Сохранение сообщения
+		save(st.cache, st.store, msg.Data)
+	})
+	Block()
 
-	// Unsubscribe
-	if err := sub.Close(); err != nil {
-		return err
-	}
-
-	// Close connection
-	if err := sc.Close(); err != nil {
-		return err
-	}
 	return nil
+}
+
+func Block() {
+	w := sync.WaitGroup{}
+	w.Add(1)
+	w.Wait()
+}
+
+// Сохранение полученного сообщения в базу данных и в кэш
+func save(cache *cache.Cache, store *store.Store, m []byte) {
+	log.Println("Unmarshalling")
+	target := model.Order{}
+	err := json.Unmarshal(m, &target)
+	if err != nil {
+		log.Fatal(err)
+	}
+	log.Println("Saving db")
+	p, err := store.Order().Create(&target)
+	if err != nil {
+		log.Println(err)
+	}
+	log.Println("Print row")
+	log.Println(p)
+	log.Println("Saving cache")
+	cache.Set(target.OrderUID, target, 5*time.Minute)
+	log.Println(cache)
 }
